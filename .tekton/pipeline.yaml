@@ -1,4 +1,4 @@
-
+cat > .tekton/pipeline.yaml <<'EOF'
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
@@ -6,13 +6,11 @@ metadata:
 spec:
   workspaces:
     - name: shared-workspace
-
   params:
     - name: repo-url
       type: string
     - name: image-name
       type: string
-
   tasks:
     - name: cleanup
       taskRef:
@@ -75,3 +73,4 @@ spec:
       params:
         - name: IMAGE
           value: $(params.image-name)
+EOF
