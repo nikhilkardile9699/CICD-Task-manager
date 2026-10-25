@@ -32,6 +32,8 @@ jobs:
         run: |
           flake8 . --count --max-line-length=127 --statistics
 
+      
       - name: Run unit tests with nose
         run: |
-          nosetests -v tests
+          python -c "import collections, collections.abc; collections.Callable = collections.abc.Callable; import nose; nose.main(argv=['nosetests', '-v', 'tests'])"
+
