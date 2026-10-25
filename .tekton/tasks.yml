@@ -26,6 +26,55 @@ spec:
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
+  name: git-clone
+  description: Clone the project repository
+spec:
+  params:
+    - name: url
+      type: string
+    - name: revision
+      type: string
+      default: main
+    - name: deleteExisting
+      type: string
+      default: "true"
+  workspaces:
+    - name: output
+  steps:
+    - name: clone
+      image: alpine/git:latest
+      workingDir: $(workspaces.output.path)
+      script: |
+        #!/bin/sh
+        set -e
+        echo "Cloning repository..."
+        git clone --branch "$(params.revision)" "$(params.url)" .
+        echo "Repository cloned successfully."
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: flake8
+  description: Run Python code quality checks
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: run-flake8
+      image: python:3.10
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        set -e
+        pip install flake8
+        echo "Running flake8..."
+        flake8 . --count --max-line-length=127 --statistics
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
   name: nose
   description: Run Python unit tests using Nose
 spec:
@@ -40,6 +89,58 @@ spec:
         set -e
         echo "Installing project dependencies..."
         pip install -r requirements.txt
+        pip install nose
         echo "Running unit tests with Nose..."
-        nosetests -v tests
-        echo "All unit tests passed successfully."
+        python -c "import collections, collections.abc; collections.Callable = collections.abc.Callable; import nose; nose.main(argv=['nosetests', '-v', 'tests'])"
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: buildah
+  description: Build a container image using Buildah
+spec:
+  params:
+    - name: IMAGE
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: build-and-push
+      image: quay.io/buildah/stable:latest
+      workingDir: $(workspaces.source.path)
+      securityContext:
+        privileged: true
+      script: |
+        #!/bin/sh
+        set -e
+        echo "Building container image..."
+        buildah bud --storage-driver=vfs -t "$(params.IMAGE)" .
+        echo "Pushing container image..."
+        buildah push --storage-driver=vfs "$(params.IMAGE)"
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: openshift-client
+  description: Deploy the application to OpenShift
+spec:
+  params:
+    - name: IMAGE
+      type: string
+    - name: APP_NAME
+      type: string
+      default: cicd-app
+  steps:
+    - name: deploy
+      image: quay.io/openshift/origin-cli:latest
+      script: |
+        #!/bin/sh
+        set -e
+        echo "Deploying application to OpenShift..."
+        oc new-app "$(params.IMAGE)" --name="$(params.APP_NAME)" || \
+          oc set image deployment/"$(params.APP_NAME)" \
+          "$(params.APP_NAME)"="$(params.IMAGE)"
+        oc expose service "$(params.APP_NAME)" || true
+        echo "Deployment command completed."
