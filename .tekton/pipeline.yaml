@@ -65,8 +65,11 @@ spec:
         - name: source
           workspace: shared-workspace
 
-    - name: deploy
-      taskRef:
-        name: openshift-client
-      runAfter:
+        - name: deploy
+        taskRef:
+         name: openshift-client
+        runAfter:
         - buildah
+        params:
+         - name: IMAGE
+           value: $(params.image-name)
