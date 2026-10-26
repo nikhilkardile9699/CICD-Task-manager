@@ -1,8 +1,7 @@
 # CI/CD Task Management Application
 
 ## Project Name
-CI/CD Task Management Application using GitHub Actions, Tekton and OpenShift.
-
+ci-cd-final-project
 ## Project Description
 This project demonstrates the implementation of a Continuous Integration and Continuous Deployment (CI/CD) pipeline using GitHub Actions and Red Hat OpenShift Pipelines (Tekton).
 
