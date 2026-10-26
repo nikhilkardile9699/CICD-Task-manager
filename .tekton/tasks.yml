@@ -1,4 +1,4 @@
-
+```yaml
 ---
 apiVersion: tekton.dev/v1beta1
 kind: Task
@@ -109,8 +109,6 @@ spec:
     - name: build-and-push
       image: quay.io/buildah/stable:latest
       workingDir: $(workspaces.source.path)
-      securityContext:
-        privileged: true
       script: |
         #!/bin/sh
         set -e
@@ -144,3 +142,4 @@ spec:
           "$(params.APP_NAME)"="$(params.IMAGE)"
         oc expose service "$(params.APP_NAME)" || true
         echo "Deployment command completed."
+```
