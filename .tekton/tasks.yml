@@ -81,7 +81,7 @@ spec:
   workspaces:
     - name: source
   steps:
-    - name: run-nose-tests
+    - name:run-unit-tests-with-nose
       image: python:3.10
       workingDir: $(workspaces.source.path)
       script: |
