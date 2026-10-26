@@ -20,7 +20,6 @@ spec:
         echo "Cleaning source workspace..."
         rm -rf "${WORKSPACE_SOURCE_PATH:?}/"*
         rm -rf "${WORKSPACE_SOURCE_PATH:?}/".[!.]*
-        rm -rf "${WORKSPACE_SOURCE_PATH:?}/"..?*
         echo "Cleanup completed successfully."
 
 ---
@@ -96,7 +95,7 @@ apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: buildah
-  description: Build and push a container image using Buildah
+  description: Build a container image using Buildah
 spec:
   params:
     - name: IMAGE
@@ -114,7 +113,6 @@ spec:
         buildah bud --storage-driver=vfs -t "$(params.IMAGE)" .
         echo "Pushing container image..."
         buildah push --storage-driver=vfs "$(params.IMAGE)"
-        echo "Image build and push completed."
 
 ---
 apiVersion: tekton.dev/v1beta1
@@ -136,11 +134,8 @@ spec:
         #!/bin/sh
         set -e
         echo "Deploying application to OpenShift..."
-        if oc get deployment "$(params.APP_NAME)" >/dev/null 2>&1; then
+        oc new-app "$(params.IMAGE)" --name="$(params.APP_NAME)" || \
           oc set image deployment/"$(params.APP_NAME)" \
-            "$(params.APP_NAME)"="$(params.IMAGE)"
-        else
-          oc new-app "$(params.IMAGE)" --name="$(params.APP_NAME)"
-        fi
+          "$(params.APP_NAME)"="$(params.IMAGE)"
         oc expose service "$(params.APP_NAME)" || true
         echo "Deployment command completed."
